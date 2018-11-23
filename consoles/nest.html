@@ -1,0 +1,45 @@
+{{template "head" .}}
+
+{{template "prom_content_head" .}}
+<h1>Nest</h1>
+
+<div id="graphs"></div>
+
+<script>
+new PromConsole.Graph({
+  node: document.querySelector("#graphs"),
+  expr: "max(nest_ambient_temperature_c)",
+  name: "Temperature",
+  yAxisFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  yHoverFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  yUnits: "°C",
+  yTitle: "Temperature",
+  min: -10,
+  max: 50
+})
+
+new PromConsole.Graph({
+  node: document.querySelector("#graphs"),
+  expr: "max(nest_humidity)",
+  name: "Humidity",
+  yAxisFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  yHoverFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  yUnits: "%",
+  yTitle: "Humidity",
+  min: 0,
+  max: 100
+})
+
+new PromConsole.Graph({
+  node: document.querySelector("#graphs"),
+  expr: ["nest_heating", "nest_cooling"],
+  name: ["Heating", "Cooling"],
+  yAxisFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  yHoverFormatter: PromConsole.NumberFormatter.humanizeNoSmallPrefix,
+  min: 0,
+})
+</script>
+
+{{template "prom_content_tail" .}}
+
+{{template "tail"}}
