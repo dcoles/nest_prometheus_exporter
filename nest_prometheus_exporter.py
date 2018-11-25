@@ -19,14 +19,24 @@ NEST_API = 'https://developer-api.nest.com'
 POLL_INTERVAL = 60  # s
 PROMETHEUS_PORT = 9111
 
-ambient_temperature_c = prometheus_client.Gauge('nest_ambient_temperature_c',
-                                                'Temperature, measured at the device, in half degrees Celsius (0.5°C)')
-humidity = prometheus_client.Gauge('nest_humidity',
-                                   'Humidity, in percent (%) format, measured at the device, rounded to the nearest 5%')
-heating = prometheus_client.Gauge('nest_heating',
-                                  'Indicates whether HVAC system is actively heating.')
-cooling = prometheus_client.Gauge('nest_cooling',
-                                  'Indicates whether HVAC system is actively cooling.')
+ambient_temperature_c = prometheus_client.Gauge(
+    'nest_ambient_temperature_c',
+    'Temperature, measured at the device, in half degrees Celsius (0.5°C)')
+humidity = prometheus_client.Gauge(
+    'nest_humidity',
+    'Humidity, in percent (%) format, measured at the device, rounded to the nearest 5%')
+heating = prometheus_client.Gauge(
+    'nest_heating',
+    'Indicates whether HVAC system is actively heating')
+cooling = prometheus_client.Gauge(
+    'nest_cooling',
+    'Indicates whether HVAC system is actively cooling')
+target_temperature_high_c = prometheus_client.Gauge(
+    'nest_target_temperature_high_c',
+    'Maximum target temperature, displayed in half degrees Celsius (0.5°C)')
+target_temperature_low_c = prometheus_client.Gauge(
+    'nest_target_temperature_low_c',
+    'Minimum target temperature, displayed in half degrees Celsius (0.5°C)')
 
 
 class BearerAuth(requests.auth.AuthBase):
@@ -64,6 +74,12 @@ def export_thermostat_state(state):
     humidity.set(state['humidity'])
     heating.set(1 if state['hvac_state'] == 'heating' else 0)
     cooling.set(1 if state['hvac_state'] == 'cooling' else 0)
+    target_temperature_high_c.set(state['target_temperature_high_c'] if state['hvac_mode'] == 'heat-cool'
+                                  else state['target_temperature_c'] if state['hvac_mode'] == 'cool'
+                                  else float('nan'))
+    target_temperature_low_c.set(state['target_temperature_low_c'] if state['hvac_mode'] == 'heat-cool'
+                                 else state['target_temperature_c'] if state['hvac_mode'] == 'heat'
+                                 else float('nan'))
 
 
 def with_raise_for_status(req):
