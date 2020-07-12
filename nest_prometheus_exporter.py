@@ -32,6 +32,10 @@ ambient_temperature_c = prometheus_client.Gauge(
     'nest_ambient_temperature_c',
     'Temperature, measured at the device, in half degrees Celsius (0.5°C)',
     ['thermostat_id'])
+ambient_temperature_f = prometheus_client.Gauge(
+    'nest_ambient_temperature_f',
+    'Temperature, measured at the device, in whole degrees Fahrenheit (°F)',
+    ['thermostat_id'])
 humidity = prometheus_client.Gauge(
     'nest_humidity',
     'Humidity, in percent (%) format, measured at the device, rounded to the nearest 5%',
@@ -51,6 +55,14 @@ target_temperature_high_c = prometheus_client.Gauge(
 target_temperature_low_c = prometheus_client.Gauge(
     'nest_target_temperature_low_c',
     'Minimum target temperature, displayed in half degrees Celsius (0.5°C)',
+    ['thermostat_id'])
+target_temperature_high_f = prometheus_client.Gauge(
+    'nest_target_temperature_high_f',
+    'Maximum target temperature, displayed in whole degrees Fahrenheit (°F)',
+    ['thermostat_id'])
+target_temperature_low_f = prometheus_client.Gauge(
+    'nest_target_temperature_low_f',
+    'Minimum target temperature, displayed in whole degrees Fahrenheit (°F)',
     ['thermostat_id'])
 time_to_target = prometheus_client.Gauge(
     'nest_time_to_target',
@@ -74,13 +86,14 @@ def update_thermostat_metrics(thermostat: nest.nest.Thermostat):
     is_online.labels(thermostat_id=id).set(1 if thermostat.online else 0)
 
     ambient_temperature_c.labels(thermostat_id=id).set(device['ambient_temperature_c'])
+    ambient_temperature_f.labels(thermostat_id=id).set(device['ambient_temperature_f'])
     humidity.labels(thermostat_id=id).set(thermostat.humidity)
     heating.labels(thermostat_id=id).set(1 if thermostat.hvac_state == 'heating' else 0)
     cooling.labels(thermostat_id=id).set(1 if thermostat.hvac_state == 'cooling' else 0)
-    target_temperature_high_c.labels(thermostat_id=id).set(
-        device['target_temperature_high_c'])
-    target_temperature_low_c.labels(thermostat_id=id).set(
-        device['target_temperature_low_c'])
+    target_temperature_high_c.labels(thermostat_id=id).set(device['target_temperature_high_c'])
+    target_temperature_low_c.labels(thermostat_id=id).set(device['target_temperature_low_c'])
+    target_temperature_high_f.labels(thermostat_id=id).set(device['target_temperature_high_f'])
+    target_temperature_low_f.labels(thermostat_id=id).set(device['target_temperature_low_f'])
     time_to_target.labels(thermostat_id=id).set(int(thermostat.time_to_target[1:]))
 
 
