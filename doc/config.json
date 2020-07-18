@@ -1,5 +1,14 @@
 {
   "nest": {
     "access_token": {"access_token":"xxx","expires_in":0}
+  },
+
+  "openweather": {
+    "appid": "xxx",
+    "locations": {
+      "Melbourne, VIC": {
+        "lat": -37.813611, "long": 144.963056
+      }
+    }
   }
 }
