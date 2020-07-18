@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prometheus Exporter for Nest Thermostat."""
-
+import argparse
 import asyncio
 import concurrent.futures
 import datetime
@@ -8,14 +8,13 @@ import email
 import hashlib
 import json
 import logging
-import os
 import sys
+from typing import *
 
 from aiohttp import web
 import prometheus_client
 import nest
 
-ACCESS_TOKEN = os.getenv('NEST_ACCESS_TOKEN')
 NEST_API = 'https://developer-api.nest.com'
 MIN_INTERVAL = datetime.timedelta(seconds=59)  # ~ 1 minute
 PROMETHEUS_PORT = 9111
@@ -113,22 +112,36 @@ def last_modified_headers(dt: datetime.datetime) -> dict:
     }
 
 
+def read_config(filename: str) -> dict:
+    with open(filename) as f:
+        return json.load(f)
+
+
 async def main():
     logging.basicConfig(level=logging.DEBUG)
 
-    if not ACCESS_TOKEN:
-        logging.error('NEST_ACCESS_TOKEN not found in environment')
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', default='config.json')
+    args = parser.parse_args()
 
     try:
-        access_token_obj = json.loads(ACCESS_TOKEN)
-        access_token = access_token_obj['access_token']
-    except (ValueError, KeyError) as e:
-        logging.error('Failed to parse access token: %s', e)
+        global_config = read_config(args.config)
+    except (OSError, ValueError) as e:
+        print(f'ERROR: Failed to read config: {e}', file=sys.stderr)
         sys.exit(1)
 
-    napi = nest.Nest(access_token=access_token)
-    last_updated = None
+    config: dict = global_config.get('nest')
+    if not config:
+        print('ERROR: Config is missing "nest" section', file=sys.stderr)
+        sys.exit(2)
+
+    access_token: dict = config.get('access_token')
+    if not access_token:
+        print('ERROR: Config is missing "nest.access_token"', file=sys.stderr)
+        sys.exit(2)
+
+    napi = nest.Nest(access_token=access_token['access_token'])
+    last_updated: Optional[datetime.datetime] = None
 
     def _update():
         nonlocal last_updated
