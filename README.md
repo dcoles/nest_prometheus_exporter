@@ -36,3 +36,22 @@ Requires an [`appid`](https://openweathermap.org/appid) to be able to fetch metr
   }
 }
 ```
+
+
+## Hue
+
+Export metrics from [Philips Hue](https://www.philips-hue.com/).
+
+### Config
+
+```json5
+{
+  "nest": {
+    // IP address of Hue hub
+    "ipaddress": "192.168.1.10",
+
+    // API username
+    "username": "xxx"
+  }
+}
+```
