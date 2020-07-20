@@ -16,9 +16,12 @@ PROMETHEUS_PORT = 9103
 hue_temperature_c = prometheus_client.Gauge(
     'hue_temperature_c', 'Temperature (°C)',
     ['sensorid', 'uniqueid'])
+hue_lightlevel = prometheus_client.Gauge(
+    'hue_lightlevel', 'Light level (Lux)',
+    ['sensorid', 'uniqueid'])
 
 
-def update_zll_temperature_metrics(sensor, sensorid: str):
+def update_temperature_metrics(sensor: dict, sensorid: str):
     def l(metric):
         return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
 
@@ -28,6 +31,18 @@ def update_zll_temperature_metrics(sensor, sensorid: str):
 
     temp = state['temperature'] / 100 if reachable else math.nan  # Fixed point (scaling factor: 100)
     l(hue_temperature_c).set(temp)
+
+
+def update_lightlevel_metrics(sensor: dict, sensorid: str):
+    def l(metric):
+        return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
+
+    state = sensor['state']
+    config = sensor['config']
+    reachable = config['reachable']
+
+    lux = 10**((state['lightlevel'] - 1) / 10000) if reachable else math.nan  # 10000 log10(lux) + 1
+    l(hue_lightlevel).set(lux)
 
 
 class HueAPI:
@@ -112,7 +127,9 @@ async def main():
             sensors = await api.sensors()
             for sensorid, sensor in sensors.items():
                 if sensor['type'] == 'ZLLTemperature':
-                    update_zll_temperature_metrics(sensor, sensorid=sensorid)
+                    update_temperature_metrics(sensor, sensorid=sensorid)
+                elif sensor['type'] == 'ZLLLightLevel':
+                    update_lightlevel_metrics(sensor, sensorid=sensorid)
 
             await asyncio.sleep(update_interval)
 
