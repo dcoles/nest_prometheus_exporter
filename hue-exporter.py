@@ -13,11 +13,14 @@ import prometheus_client
 
 PROMETHEUS_PORT = 9103
 
-hue_temperature_c = prometheus_client.Gauge(
-    'hue_temperature_c', 'Temperature (°C)',
+hue_sensor_temperature_c = prometheus_client.Gauge(
+    'hue_sensor_temperature_c', 'Temperature (°C)',
     ['sensorid', 'uniqueid'])
-hue_lightlevel = prometheus_client.Gauge(
-    'hue_lightlevel', 'Light level (Lux)',
+hue_sensor_lightlevel = prometheus_client.Gauge(
+    'hue_sensor_lightlevel', 'Light level (Lux)',
+    ['sensorid', 'uniqueid'])
+hue_sensor_lightlevel_raw = prometheus_client.Gauge(
+    'hue_sensor_lightlevel_raw', 'Light level (raw)',
     ['sensorid', 'uniqueid'])
 
 
@@ -30,7 +33,7 @@ def update_temperature_metrics(sensor: dict, sensorid: str):
     reachable = config['reachable']
 
     temp = state['temperature'] / 100 if reachable else math.nan  # Fixed point (scaling factor: 100)
-    l(hue_temperature_c).set(temp)
+    l(hue_sensor_temperature_c).set(temp)
 
 
 def update_lightlevel_metrics(sensor: dict, sensorid: str):
@@ -42,7 +45,8 @@ def update_lightlevel_metrics(sensor: dict, sensorid: str):
     reachable = config['reachable']
 
     lux = 10**((state['lightlevel'] - 1) / 10000) if reachable else math.nan  # 10000 log10(lux) + 1
-    l(hue_lightlevel).set(lux)
+    l(hue_sensor_lightlevel).set(lux)
+    l(hue_sensor_lightlevel_raw).set(state['lightlevel'])
 
 
 class HueAPI:
