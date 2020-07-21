@@ -46,7 +46,7 @@ def update_lightlevel_metrics(sensor: dict, sensorid: str):
 
     lux = 10**((state['lightlevel'] - 1) / 10000) if reachable else math.nan  # 10000 log10(lux) + 1
     l(hue_sensor_lightlevel).set(lux)
-    l(hue_sensor_lightlevel_raw).set(state['lightlevel'])
+    l(hue_sensor_lightlevel_raw).set(state['lightlevel'] if reachable else math.nan)
 
 
 class HueAPI:
