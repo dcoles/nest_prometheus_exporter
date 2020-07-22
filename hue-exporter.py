@@ -28,25 +28,26 @@ def update_temperature_metrics(sensor: dict, sensorid: str):
     def l(metric):
         return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
 
-    state = sensor['state']
-    config = sensor['config']
-    reachable = config['reachable']
-
-    temp = state['temperature'] / 100 if reachable else math.nan  # Fixed point (scaling factor: 100)
-    l(hue_sensor_temperature_c).set(temp)
+    l(hue_sensor_temperature_c).set(get_state(sensor, 'temperature') / 100)  # Fixed point (scaling factor: 100)
 
 
 def update_lightlevel_metrics(sensor: dict, sensorid: str):
     def l(metric):
         return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
 
-    state = sensor['state']
-    config = sensor['config']
-    reachable = config['reachable']
+    lightlevel_raw = get_state(sensor, 'lightlevel')
+    lightlevel_lux = 10**((lightlevel_raw - 1) / 10000)  # 10000 log10(lux) + 1
 
-    lux = 10**((state['lightlevel'] - 1) / 10000) if reachable else math.nan  # 10000 log10(lux) + 1
-    l(hue_sensor_lightlevel).set(lux)
-    l(hue_sensor_lightlevel_raw).set(state['lightlevel'] if reachable else math.nan)
+    l(hue_sensor_lightlevel).set(lightlevel_lux)
+    l(hue_sensor_lightlevel_raw).set(lightlevel_raw)
+
+
+def get_state(sensor: dict, field: str) -> float:
+    if not sensor['config']['reachable']:
+        return math.nan
+
+    state = sensor['state'][field]
+    return state if state is not None else math.nan
 
 
 class HueAPI:
@@ -92,7 +93,7 @@ async def main():
         print('ERROR: Config is missing "hue.ipaddress"', file=sys.stderr)
         sys.exit(2)
 
-    username: dict = config.get('username')
+    username: str = config.get('username')
     if not username:
         print('ERROR: Config is missing "hue.username" section', file=sys.stderr)
         sys.exit(2)
