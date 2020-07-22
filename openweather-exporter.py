@@ -16,8 +16,14 @@ PROMETHEUS_PORT = 9102
 owm_temperature = prometheus_client.Gauge(
     'owm_temperature', 'Temperature (K)',
     ['location', 'lat', 'long'])
+owm_temperature_c = prometheus_client.Gauge(
+    'owm_temperature_c', 'Temperature (°C)',
+    ['location', 'lat', 'long'])
 owm_temperature_feels_like = prometheus_client.Gauge(
     'owm_temperature_feels_like', 'Temperature accounting for human perception of weather (K)',
+    ['location', 'lat', 'long'])
+owm_temperature_feels_like_c = prometheus_client.Gauge(
+    'owm_temperature_feels_like_c', 'Temperature accounting for human perception of weather (°C)',
     ['location', 'lat', 'long'])
 owm_pressure = prometheus_client.Gauge(
     'owm_pressure', 'Atmospheric pressure (hPa)',
@@ -98,7 +104,9 @@ def update_openweather_metrics(onecall: OneCallResponse, location: str):
         return metric.labels(location=location, lat=onecall.lat, long=onecall.long)
 
     l(owm_temperature).set(onecall.temp)
+    l(owm_temperature_c).set(onecall.temp_c)
     l(owm_temperature_feels_like).set(onecall.feels_like)
+    l(owm_temperature_feels_like_c).set(onecall.feels_like_c)
     l(owm_pressure).set(onecall.pressure)
     l(owm_humidity).set(onecall.humidity)
 
