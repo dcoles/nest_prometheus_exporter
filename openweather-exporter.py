@@ -6,12 +6,14 @@ import json
 import logging
 import math
 import sys
+import time
 
 import aiohttp
 from aiohttp import web
 import prometheus_client
 
 PROMETHEUS_PORT = 9102
+UPDATE_INTERVAL = 300  # sec
 
 owm_temperature = prometheus_client.Gauge(
     'owm_temperature', 'Temperature (K)',
@@ -184,9 +186,16 @@ async def main():
     site = web.TCPSite(runner, host, port)
     await site.start()
 
-    update_interval = 60  # sec
+    last_update = 0
     async with aiohttp.ClientSession() as s:
         while True:
+            now = time.time()
+
+            remaining_time = last_update + UPDATE_INTERVAL - now
+            if remaining_time > 0:
+                await asyncio.sleep(remaining_time)
+                continue
+
             for location, cfg in locations.items():
                 lat, long = cfg['lat'], cfg['long']
                 logging.info('Fetching weather for %s (%d, %d)', location, lat, long)
@@ -194,8 +203,7 @@ async def main():
                 logging.debug('Response: %r', onecall)
                 update_openweather_metrics(onecall, location=location)
 
-            await asyncio.sleep(update_interval)
-
+            last_update = now
 
 if __name__ == '__main__':
     asyncio.run(main())
