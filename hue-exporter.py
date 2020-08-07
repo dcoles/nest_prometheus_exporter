@@ -51,6 +51,9 @@ def get_state(sensor: dict, field: str) -> float:
 
 
 class HueAPI:
+    ZLL_TEMPERATURE = 'ZLLTemperature'
+    ZLL_LIGHTLEVEL = 'ZLLLightLevel'
+
     def __init__(self, session: aiohttp.ClientSession, ipaddress: str, username: str):
         self.session = session
         self.ipaddress = ipaddress
