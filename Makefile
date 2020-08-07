@@ -1,7 +1,7 @@
 PREFIX := /usr/local
 LIBDIR := $(PREFIX)/lib/prometheus-exporters
 UNITDIR := $(PREFIX)/lib/systemd/system
-SCRIPTS := nest-exporter.py openweather-exporter.py hue-exporter.py
+SRCS := lib.py nest-exporter.py openweather-exporter.py hue-exporter.py
 SERVICES := systemd/hue-exporter.service systemd/nest-exporter.service systemd/openweather-exporter.service
 
 all:
@@ -13,7 +13,7 @@ requirements.txt:
 install: requirements.txt
 	python3 -m venv --symlinks --clear $(LIBDIR)
 	$(LIBDIR)/bin/pip install -r requirements.txt
-	install $(SCRIPTS) $(LIBDIR)
+	install $(SRCS) $(LIBDIR)
 	mkdir -p $(UNITDIR)
 	install $(SERVICES) $(UNITDIR)
 

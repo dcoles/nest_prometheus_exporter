@@ -8,7 +8,7 @@ StartLimitBurst=10
 [Service]
 DynamicUser=yes
 WorkingDirectory=/usr/local/lib/prometheus-exporters
-ExecStart=/usr/local/lib/prometheus-exporters/bin/python3 openweather-exporter.py -c /etc/prometheus-exporters/config.json
+ExecStart=/usr/local/lib/prometheus-exporters/bin/python3 openweather-exporter.py --port 9102 -c /etc/prometheus-exporters/config.json
 Restart=on-failure
 RestartSec=30s
 
