@@ -2,15 +2,18 @@
 """Prometheus Exporter for OpenWeather."""
 import argparse
 import asyncio
-import json
 import logging
 import math
 import sys
-import time
+from functools import partial
+from urllib.parse import quote
+from typing import *
 
 import aiohttp
 from aiohttp import web
 import prometheus_client
+
+from utils import read_config, with_connection_retry, periodic, span
 
 PROMETHEUS_PORT = 9102
 UPDATE_INTERVAL = 300  # sec
@@ -117,19 +120,35 @@ def update_openweather_metrics(onecall: OneCallResponse, location: str):
     l(owm_wind_degrees).set(onecall.wind_deg)
 
 
-async def fetch_onecall(s: aiohttp.ClientSession, lat_long: (int, int), appid: str) -> OneCallResponse:
-    lat, long = lat_long
-    url = f'https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={long}&appid={appid}'
-    response = await s.get(url)
-    response.raise_for_status()
+class OpenWeather:
+    OneCallResponse = OneCallResponse
 
-    data = await response.json()
-    return OneCallResponse(data)
+    def __init__(self, session: aiohttp.ClientSession, appid: str):
+        self.session = session
+        self.appid = appid
+
+    async def onecall(self, lat_long: (int, int)) -> OneCallResponse:
+        lat, long = lat_long
+        appid = quote(self.appid)
+
+        url = f'https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={long}&appid={appid}'
+        response = await self.session.get(url)
+        response.raise_for_status()
+
+        data = await response.json()
+        return OneCallResponse(data)
 
 
-def read_config(filename: str) -> dict:
-    with open(filename) as f:
-        return json.load(f)
+async def update(openweather: OpenWeather, locations: Dict[str, Dict]):
+    for location, cfg in locations.items():
+        lat, long = cfg['lat'], cfg['long']
+
+        logging.info('Fetching weather for %s (%d, %d)', location, lat, long)
+        with span('get oneweather onecall'):
+            onecall = await openweather.onecall((lat, long))
+
+        logging.debug('Response: %r', onecall)
+        update_openweather_metrics(onecall, location=location)
 
 
 async def main():
@@ -186,24 +205,11 @@ async def main():
     site = web.TCPSite(runner, host, port)
     await site.start()
 
-    last_update = 0
     async with aiohttp.ClientSession() as s:
-        while True:
-            now = time.time()
+        openweather = OpenWeather(s, appid=appid)
+        await with_connection_retry(
+            partial(periodic, update, openweather, locations, update_interval=UPDATE_INTERVAL))
 
-            remaining_time = last_update + UPDATE_INTERVAL - now
-            if remaining_time > 0:
-                await asyncio.sleep(remaining_time)
-                continue
-
-            for location, cfg in locations.items():
-                lat, long = cfg['lat'], cfg['long']
-                logging.info('Fetching weather for %s (%d, %d)', location, lat, long)
-                onecall = await fetch_onecall(s, (lat, long), appid=appid)
-                logging.debug('Response: %r', onecall)
-                update_openweather_metrics(onecall, location=location)
-
-            last_update = now
 
 if __name__ == '__main__':
     asyncio.run(main())

@@ -6,7 +6,6 @@ import concurrent.futures
 import datetime
 import email
 import hashlib
-import json
 import logging
 import sys
 from typing import *
@@ -14,6 +13,8 @@ from typing import *
 from aiohttp import web
 import prometheus_client
 import nest
+
+from utils import read_config
 
 NEST_API = 'https://developer-api.nest.com'
 MIN_INTERVAL = datetime.timedelta(seconds=59)  # ~ 1 minute
@@ -110,11 +111,6 @@ def last_modified_headers(dt: datetime.datetime) -> dict:
         'Last-Modified': last_modified,
         'ETag': f'"{hashlib.md5(last_modified.encode()).hexdigest()}"',
     }
-
-
-def read_config(filename: str) -> dict:
-    with open(filename) as f:
-        return json.load(f)
 
 
 async def main():

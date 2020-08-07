@@ -2,7 +2,6 @@
 """Prometheus Exporter for Philips Hue."""
 import argparse
 import asyncio
-import json
 import logging
 import math
 import sys
@@ -10,6 +9,8 @@ import sys
 import aiohttp
 from aiohttp import web
 import prometheus_client
+
+from utils import read_config, with_connection_retry, periodic, span
 
 PROMETHEUS_PORT = 9103
 
@@ -68,9 +69,16 @@ class HueAPI:
         return data
 
 
-def read_config(filename: str) -> dict:
-    with open(filename) as f:
-        return json.load(f)
+async def update(api: HueAPI):
+    """Update metrics."""
+    with span('get hue sensors'):
+        sensors = await api.sensors()
+
+    for sensorid, sensor in sensors.items():
+        if sensor['type'] == api.ZLL_TEMPERATURE:
+            update_temperature_metrics(sensor, sensorid=sensorid)
+        elif sensor['type'] == api.ZLL_LIGHTLEVEL:
+            update_lightlevel_metrics(sensor, sensorid=sensorid)
 
 
 async def main():
@@ -127,19 +135,9 @@ async def main():
     site = web.TCPSite(runner, host, port)
     await site.start()
 
-    update_interval = 60  # sec
     async with aiohttp.ClientSession() as s:
         api = HueAPI(s, ipaddress, username)
-
-        while True:
-            sensors = await api.sensors()
-            for sensorid, sensor in sensors.items():
-                if sensor['type'] == 'ZLLTemperature':
-                    update_temperature_metrics(sensor, sensorid=sensorid)
-                elif sensor['type'] == 'ZLLLightLevel':
-                    update_lightlevel_metrics(sensor, sensorid=sensorid)
-
-            await asyncio.sleep(update_interval)
+        await with_connection_retry(periodic, update, api)
 
 
 if __name__ == '__main__':
