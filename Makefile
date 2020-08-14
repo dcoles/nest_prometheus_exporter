@@ -17,6 +17,10 @@ install: requirements.txt
 	mkdir -p $(UNITDIR)
 	install $(SERVICES) $(UNITDIR)
 
+reload:
+	systemctl daemon-reload
+	systemctl restart nest-exporter hue-exporter openweather-exporter
 
-.PHONY: all install
+
+.PHONY: all install reload
 
