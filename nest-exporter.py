@@ -79,6 +79,9 @@ async def run(config):
         sys.exit(2)
 
     napi = nest.Nest(access_token=config['access_token']['access_token'])
+    client_version = napi.client_version  # API call required to start event loop
+    logging.info('Client version: %s', client_version)
+    logging.debug('Structures: %s', napi.structures)
 
     def _update():
         logger.debug('Updating nest state')
