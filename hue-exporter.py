@@ -11,13 +11,13 @@ from lib import parse_args, prometheus_exporter, with_connection_retry, periodic
 
 hue_sensor_temperature_c = prometheus_client.Gauge(
     'hue_sensor_temperature_c', 'Temperature (°C)',
-    ['sensorid', 'uniqueid'])
+    ['sensorid', 'uniqueid', 'name'])
 hue_sensor_lightlevel = prometheus_client.Gauge(
     'hue_sensor_lightlevel', 'Light level (Lux)',
-    ['sensorid', 'uniqueid'])
+    ['sensorid', 'uniqueid', 'name'])
 hue_sensor_lightlevel_raw = prometheus_client.Gauge(
     'hue_sensor_lightlevel_raw', 'Light level (raw)',
-    ['sensorid', 'uniqueid'])
+    ['sensorid', 'uniqueid', 'name'])
 
 
 async def run(config: dict):
@@ -70,14 +70,14 @@ async def update(api: HueAPI):
 
 def update_temperature_metrics(sensor: dict, sensorid: str):
     def l(metric):
-        return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
+        return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'], name=sensor['name'])
 
     l(hue_sensor_temperature_c).set(get_state(sensor, 'temperature') / 100)  # Fixed point (scaling factor: 100)
 
 
 def update_lightlevel_metrics(sensor: dict, sensorid: str):
     def l(metric):
-        return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'])
+        return metric.labels(sensorid=sensorid, uniqueid=sensor['uniqueid'], name=sensor['name'])
 
     lightlevel_raw = get_state(sensor, 'lightlevel')
     lightlevel_lux = 10**((lightlevel_raw - 1) / 10000)  # 10000 log10(lux) + 1
